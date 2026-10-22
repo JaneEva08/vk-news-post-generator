@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Генератор постов</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">AI-новости → ВКонтакте</p>
+      <h1>Из новости — в&nbsp;пост за&nbsp;минуту</h1>
+      <p class="lead">Вставьте ссылку или текст, выберите тон — остальное сделает нейросеть.</p>
+    </header>
+
+    <section class="card">
+      <!-- Переключатель режимов -->
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-mode="url" role="tab">По ссылке</button>
+        <button class="tab" data-mode="text" role="tab">Текстом</button>
+      </div>
+
+      <div id="pane-url" class="pane">
+        <label for="url">Ссылка на новость</label>
+        <input id="url" type="url" placeholder="https://...">
+      </div>
+
+      <div id="pane-text" class="pane" hidden>
+        <label for="text">Текст новости</label>
+        <textarea id="text" rows="7" placeholder="Вставьте сюда текст новости"></textarea>
+        <label for="source" class="optional">Ссылка на источник <span>— необязательно</span></label>
+        <input id="source" type="url" placeholder="https://...">
+      </div>
+
+      <label>Тон</label>
+      <div class="tones" id="tones">
+        <button class="chip" data-tone="expert">Экспертный</button>
+        <button class="chip active" data-tone="friendly">Дружелюбный</button>
+        <button class="chip" data-tone="short">Короткий</button>
+        <button class="chip" data-tone="humor">С юмором</button>
+      </div>
+
+      <p id="error" class="error" hidden></p>
+
+      <button id="go" class="primary">Сформировать пост</button>
+    </section>
+
+    <section class="card result" id="result" hidden>
+      <div class="result-head">
+        <h2>Готовый пост</h2>
+        <div class="actions">
+          <button id="edit" class="icon-btn" title="Редактировать" aria-label="Редактировать">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </button>
+          <button id="copy" class="secondary">Скопировать</button>
+        </div>
+      </div>
+      <textarea id="post" readonly rows="12"></textarea>
+      <p class="counter"><span id="count">0</span> / 1500 символов</p>
+
+      <!-- Необязательная картинка к посту -->
+      <div class="picker">
+        <label class="file-btn" for="post-image">📎 Добавить картинку к посту</label>
+        <input id="post-image" type="file" accept="image/png,image/jpeg,image/gif" hidden>
+        <button id="post-gen" class="secondary" data-kind="post">✨ Сгенерировать картинку</button>
+        <div id="post-preview" class="preview" hidden>
+          <img alt="Превью">
+          <button id="post-clear" class="icon-btn" title="Убрать картинку" aria-label="Убрать картинку">✕</button>
+        </div>
+      </div>
+
+      <p id="vk-error" class="error" hidden></p>
+      <p id="vk-done" class="done" hidden>Опубликовано: <a id="vk-link" target="_blank" rel="noopener"></a></p>
+      <button id="publish" class="primary vk">Опубликовать во ВКонтакте</button>
+    </section>
+    <!-- История: отдельно от поста, только картинка -->
+    <section class="card">
+      <h2 class="story-title">История во ВКонтакте</h2>
+      <p class="hint">Загрузите картинку — она выйдет историей сообщества. Лучше вертикальная, 9:16 (например, 1080×1920), JPG, PNG или GIF до 10 МБ.</p>
+      <div class="picker">
+        <label class="file-btn" for="story-image">🖼 Выбрать картинку</label>
+        <input id="story-image" type="file" accept="image/png,image/jpeg,image/gif" hidden>
+        <button id="story-gen" class="secondary" data-kind="story">✨ Сгенерировать по посту</button>
+        <div id="story-preview" class="preview story" hidden>
+          <img alt="Превью истории">
+          <button id="story-clear" class="icon-btn" title="Убрать картинку" aria-label="Убрать картинку">✕</button>
+        </div>
+      </div>
+      <p id="story-error" class="error" hidden></p>
+      <p id="story-done" class="done" hidden>История опубликована. <a id="story-link" target="_blank" rel="noopener"></a></p>
+      <button id="story-go" class="primary vk">Опубликовать историю</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">Пост скопирован</div>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
