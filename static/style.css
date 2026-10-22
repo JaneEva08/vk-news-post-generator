@@ -224,3 +224,6 @@ input:focus, textarea:focus {
   .card { padding: 18px; }
   .result-head { flex-wrap: wrap; }
 }
+
+/* Кнопка «Скачать» под превью картинки */
+.preview .dl-btn { display: inline-block; margin-top: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); text-decoration: none; font-size: 14px; cursor: pointer; color: inherit; }

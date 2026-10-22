@@ -100,7 +100,12 @@ function bindPicker(prefix) {
   input.addEventListener("change", () => {
     const file = input.files[0];
     if (!file) return;
-    box.querySelector("img").src = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
+    box.querySelector("img").src = url;
+    // Кнопка «Скачать»: сохранить картинку, чтобы прикрепить в ВК вручную
+    const dl = $(`${prefix}-download`);
+    dl.href = url;
+    dl.download = file.name || "image.png";
     box.hidden = false;
   });
   $(`${prefix}-clear`).addEventListener("click", () => {

@@ -200,7 +200,7 @@ VK_ERRORS = {
 
 VK_ERRORS.update({
     7: "У ключа нет права на это действие. Создайте ключ с правами: стена, фотографии, истории.",
-    27: "Этот метод ВКонтакте недоступен для ключа сообщества.",
+    27: "Этот метод ВКонтакте недоступен для ключа сообщества. Нужен ключ пользователя (VK_USER_TOKEN), см. README.",
     121: "ВКонтакте не принял загруженную картинку. Попробуйте другой файл.",
 })
 
@@ -228,9 +228,29 @@ def vk_settings():
     return token, group_id, version
 
 
-def vk_call(method, **params):
-    """Вызываем метод API ВКонтакте и возвращаем поле response. Ошибки — понятным текстом."""
-    token, _, version = vk_settings()
+def vk_user_token():
+    """Ключ пользователя (админа сообщества) для загрузки фото. Пустой — значит, не задан."""
+    return (os.getenv("VK_USER_TOKEN") or "").strip() or None
+
+
+def require_user_token():
+    """Для поста с картинкой нужен ключ пользователя: не публикуем молча без картинки."""
+    token = vk_user_token()
+    if not token:
+        raise UserError(
+            "Для поста с картинкой нужен ключ пользователя (VK_USER_TOKEN), см. README. "
+            "Можно убрать картинку и опубликовать только текст."
+        )
+    return token
+
+
+def vk_call(method, token=None, **params):
+    """Вызываем метод API ВКонтакте и возвращаем поле response. Ошибки — понятным текстом.
+
+    По умолчанию используется ключ сообщества; для загрузки фото передаём ключ пользователя.
+    """
+    community_token, _, version = vk_settings()
+    token = token or community_token
     params.update({"access_token": token, "v": version})
     try:
         result = requests.post(f"https://api.vk.com/method/{method}", data=params, timeout=20).json()
@@ -288,6 +308,8 @@ def publish_to_vk(message, image=None, publish_date=None):
     Если указан publish_date, ВКонтакте сам выложит пост в это время.
     """
     _, group_id, _ = vk_settings()
+    # Проверяем ключ до любых запросов, чтобы не отправить пост без картинки
+    user_token = require_user_token() if image else None
     params = {
         "owner_id": -int(group_id),  # у сообществ id отрицательный
         "from_group": 1,  # публикуем от имени сообщества
@@ -298,10 +320,10 @@ def publish_to_vk(message, image=None, publish_date=None):
 
     if image:
         # 1) получаем адрес загрузки, 2) грузим файл, 3) сохраняем фото на стене
-        server = vk_call("photos.getWallUploadServer", group_id=group_id)
+        server = vk_call("photos.getWallUploadServer", token=user_token, group_id=group_id)
         up = upload_to_vk(server["upload_url"], "photo", image)
         saved = vk_call(
-            "photos.saveWallPhoto", group_id=group_id,
+            "photos.saveWallPhoto", token=user_token, group_id=group_id,
             photo=up.get("photo"), server=up.get("server"), hash=up.get("hash"),
         )
         params["attachments"] = f"photo{saved[0]['owner_id']}_{saved[0]['id']}"
@@ -313,12 +335,14 @@ def publish_to_vk(message, image=None, publish_date=None):
 def publish_story(image):
     """Публикуем историю сообщества из картинки. Возвращаем ссылку (или None)."""
     _, group_id, _ = vk_settings()
-    server = vk_call("stories.getPhotoUploadServer", add_to_news=1, group_id=group_id)
+    # Истории: берём ключ пользователя, если он задан; иначе ключ сообщества, как раньше
+    user_token = vk_user_token()
+    server = vk_call("stories.getPhotoUploadServer", token=user_token, add_to_news=1, group_id=group_id)
     up = upload_to_vk(server["upload_url"], "file", image)
     result = up.get("response", {}).get("upload_result")
     if not result:
         raise UserError("ВКонтакте не принял картинку для истории. Попробуйте другой файл.")
-    saved = vk_call("stories.save", upload_results=result)
+    saved = vk_call("stories.save", token=user_token, upload_results=result)
     items = saved.get("items") or []
     if items:
         return f"https://vk.com/story{items[0]['owner_id']}_{items[0]['id']}"
