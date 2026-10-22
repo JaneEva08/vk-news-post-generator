@@ -93,67 +93,6 @@ function toast(message) {
   setTimeout(() => t.classList.remove("show"), 1800);
 }
 
-// Выбор картинки: показываем превью и кнопку «убрать» (prefix — post или story)
-function bindPicker(prefix) {
-  const input = $(`${prefix}-image`);
-  const box = $(`${prefix}-preview`);
-  input.addEventListener("change", () => {
-    const file = input.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    box.querySelector("img").src = url;
-    // Кнопка «Скачать»: сохранить картинку, чтобы прикрепить в ВК вручную
-    const dl = $(`${prefix}-download`);
-    dl.href = url;
-    dl.download = file.name || "image.png";
-    box.hidden = false;
-  });
-  $(`${prefix}-clear`).addEventListener("click", () => {
-    input.value = "";
-    box.hidden = true;
-  });
-}
-bindPicker("post");
-bindPicker("story");
-
-// Кнопки «Сгенерировать картинку»: рисуем по тексту поста и кладём в тот же выбор файла
-["post", "story"].forEach((prefix) => {
-  const btn = $(`${prefix}-gen`);
-  const errBox = prefix === "post" ? $("vk-error") : $("story-error");
-  const label = btn.textContent;
-
-  btn.addEventListener("click", async () => {
-    errBox.hidden = true;
-    btn.disabled = true;
-    btn.textContent = "Рисую… (до минуты)";
-    try {
-      const resp = await fetch("/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post: post.value, kind: btn.dataset.kind }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        errBox.textContent = data.error || "Не удалось нарисовать картинку. Попробуйте ещё раз.";
-        errBox.hidden = false;
-        return;
-      }
-      // Превращаем base64 в файл и подставляем в поле выбора картинки
-      const blob = await (await fetch(`data:image/png;base64,${data.image}`)).blob();
-      const dt = new DataTransfer();
-      dt.items.add(new File([blob], "generated.png", { type: "image/png" }));
-      $(`${prefix}-image`).files = dt.files;
-      $(`${prefix}-image`).dispatchEvent(new Event("change"));
-    } catch (e) {
-      errBox.textContent = "Не удалось связаться с сервером. Проверьте, что python app.py запущен.";
-      errBox.hidden = false;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = label;
-    }
-  });
-});
-
 // Переключатель «Отложить публикацию»: показываем выбор даты, по умолчанию — через час
 $("schedule-on").addEventListener("change", () => {
   const on = $("schedule-on").checked;
@@ -166,47 +105,6 @@ $("schedule-on").addEventListener("change", () => {
     const pad = (n) => String(n).padStart(2, "0");
     $("schedule-at").value =
       `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-});
-
-// Кнопка «Опубликовать историю»
-$("story-go").addEventListener("click", async () => {
-  $("story-error").hidden = true;
-  $("story-done").hidden = true;
-
-  const file = $("story-image").files[0];
-  if (!file) {
-    $("story-error").textContent = "Выберите картинку для истории.";
-    $("story-error").hidden = false;
-    return;
-  }
-  if (!confirm("Опубликовать эту картинку историей сообщества?")) return;
-
-  const btn = $("story-go");
-  btn.disabled = true;
-  btn.textContent = "Публикую…";
-  try {
-    const form = new FormData();
-    form.append("image", file);
-    const resp = await fetch("/story", { method: "POST", body: form });
-    const data = await resp.json();
-    if (!resp.ok) {
-      $("story-error").textContent = data.error || "Не удалось опубликовать историю. Попробуйте ещё раз.";
-      $("story-error").hidden = false;
-      return;
-    }
-    if (data.url) {
-      $("story-link").href = data.url;
-      $("story-link").textContent = data.url;
-    }
-    $("story-done").hidden = false;
-    toast("История опубликована");
-  } catch (e) {
-    $("story-error").textContent = "Не удалось связаться с сервером. Проверьте, что python app.py запущен.";
-    $("story-error").hidden = false;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Опубликовать историю";
   }
 });
 
@@ -247,10 +145,8 @@ $("publish").addEventListener("click", async () => {
   btn.disabled = true;
   btn.textContent = "Публикую…";
   try {
-    // Отправляем формой, чтобы вместе с текстом ушла картинка
     const form = new FormData();
     form.append("post", post.value);
-    if ($("post-image").files[0]) form.append("image", $("post-image").files[0]);
     if (publishDate) form.append("publish_date", publishDate);
     const resp = await fetch("/publish", { method: "POST", body: form });
     const data = await resp.json();

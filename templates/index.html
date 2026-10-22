@@ -62,18 +62,6 @@
       <textarea id="post" readonly rows="12"></textarea>
       <p class="counter"><span id="count">0</span> / 1500 символов</p>
 
-      <!-- Необязательная картинка к посту -->
-      <div class="picker">
-        <label class="file-btn" for="post-image">📎 Добавить картинку к посту</label>
-        <input id="post-image" type="file" accept="image/png,image/jpeg,image/gif" hidden>
-        <button id="post-gen" class="secondary" data-kind="post">✨ Сгенерировать картинку</button>
-        <div id="post-preview" class="preview" hidden>
-          <img alt="Превью">
-          <a id="post-download" class="secondary dl-btn" download="image.png">⬇ Скачать</a>
-          <button id="post-clear" class="icon-btn" title="Убрать картинку" aria-label="Убрать картинку">✕</button>
-        </div>
-      </div>
-
       <!-- Когда публиковать: сразу или в выбранное время -->
       <div class="schedule">
         <label class="check"><input type="checkbox" id="schedule-on"> Отложить публикацию</label>
@@ -83,24 +71,6 @@
       <p id="vk-error" class="error" hidden></p>
       <p id="vk-done" class="done" hidden><span id="vk-done-text">Опубликовано:</span> <a id="vk-link" target="_blank" rel="noopener"></a></p>
       <button id="publish" class="primary vk">Опубликовать во ВКонтакте</button>
-    </section>
-    <!-- История: отдельно от поста, только картинка -->
-    <section class="card">
-      <h2 class="story-title">История во ВКонтакте</h2>
-      <p class="hint">Загрузите картинку — она выйдет историей сообщества. Лучше вертикальная, 9:16 (например, 1080×1920), JPG, PNG или GIF до 10 МБ.</p>
-      <div class="picker">
-        <label class="file-btn" for="story-image">🖼 Выбрать картинку</label>
-        <input id="story-image" type="file" accept="image/png,image/jpeg,image/gif" hidden>
-        <button id="story-gen" class="secondary" data-kind="story">✨ Сгенерировать по посту</button>
-        <div id="story-preview" class="preview story" hidden>
-          <img alt="Превью истории">
-          <a id="story-download" class="secondary dl-btn" download="image.png">⬇ Скачать</a>
-          <button id="story-clear" class="icon-btn" title="Убрать картинку" aria-label="Убрать картинку">✕</button>
-        </div>
-      </div>
-      <p id="story-error" class="error" hidden></p>
-      <p id="story-done" class="done" hidden>История опубликована. <a id="story-link" target="_blank" rel="noopener"></a></p>
-      <button id="story-go" class="primary vk">Опубликовать историю</button>
     </section>
   </main>
 
