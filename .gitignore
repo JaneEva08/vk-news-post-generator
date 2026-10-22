@@ -1,8 +1,30 @@
+# Секреты: ключи и токены
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
 .venv/
 venv/
-__pycache__/
-*.pyc
+env/
+*.egg-info/
+.pytest_cache/
 
+# Редакторы и система
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# Логи и временные файлы
 *.log
+*.tmp
+
+# Сгенерированные картинки и тестовые файлы
+generated*.png
+test_image*.png
+story_test*.png
