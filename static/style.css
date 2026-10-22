@@ -198,6 +198,12 @@ input:focus, textarea:focus {
 .story-title { margin: 0 0 6px; font-family: Georgia, serif; font-size: 24px; }
 .hint { margin: 0; color: var(--muted); font-size: 14px; }
 
+/* Отложенная публикация */
+.schedule { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; }
+.check input { width: auto; accent-color: var(--accent); }
+.schedule input[type="datetime-local"] { width: auto; }
+
 /* Уведомление */
 .toast {
   position: fixed;

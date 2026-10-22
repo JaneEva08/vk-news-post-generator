@@ -149,6 +149,21 @@ bindPicker("story");
   });
 });
 
+// Переключатель «Отложить публикацию»: показываем выбор даты, по умолчанию — через час
+$("schedule-on").addEventListener("change", () => {
+  const on = $("schedule-on").checked;
+  $("schedule-at").hidden = !on;
+  $("publish").textContent = on ? "Отложить публикацию" : "Опубликовать во ВКонтакте";
+  if (on && !$("schedule-at").value) {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+    // datetime-local ждёт местное время в формате ГГГГ-ММ-ДДTЧЧ:ММ
+    const pad = (n) => String(n).padStart(2, "0");
+    $("schedule-at").value =
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+});
+
 // Кнопка «Опубликовать историю»
 $("story-go").addEventListener("click", async () => {
   $("story-error").hidden = true;
@@ -200,8 +215,28 @@ $("publish").addEventListener("click", async () => {
     $("vk-error").hidden = false;
     return;
   }
+  // Если включено «Отложить» — берём выбранное время (в секундах, как ждёт ВКонтакте)
+  let publishDate = "";
+  if ($("schedule-on").checked) {
+    const when = new Date($("schedule-at").value);
+    if (!$("schedule-at").value || isNaN(when)) {
+      $("vk-error").textContent = "Выберите дату и время публикации.";
+      $("vk-error").hidden = false;
+      return;
+    }
+    if (when.getTime() < Date.now() + 3 * 60 * 1000) {
+      $("vk-error").textContent = "Время публикации должно быть минимум через 3 минуты.";
+      $("vk-error").hidden = false;
+      return;
+    }
+    publishDate = String(Math.floor(when.getTime() / 1000));
+  }
+
   // Подтверждение, чтобы пост не ушёл случайно
-  if (!confirm("Опубликовать этот пост в сообществе ВКонтакте?")) return;
+  const question = publishDate
+    ? `Отложить публикацию на ${new Date($("schedule-at").value).toLocaleString("ru-RU")}?`
+    : "Опубликовать этот пост в сообществе ВКонтакте?";
+  if (!confirm(question)) return;
 
   const btn = $("publish");
   btn.disabled = true;
@@ -211,6 +246,7 @@ $("publish").addEventListener("click", async () => {
     const form = new FormData();
     form.append("post", post.value);
     if ($("post-image").files[0]) form.append("image", $("post-image").files[0]);
+    if (publishDate) form.append("publish_date", publishDate);
     const resp = await fetch("/publish", { method: "POST", body: form });
     const data = await resp.json();
     if (!resp.ok) {
@@ -220,14 +256,17 @@ $("publish").addEventListener("click", async () => {
     }
     $("vk-link").href = data.url;
     $("vk-link").textContent = data.url;
+    $("vk-done-text").textContent = data.scheduled
+      ? "Пост отложен, он лежит в «Отложенных» сообщества:"
+      : "Опубликовано:";
     $("vk-done").hidden = false;
-    toast("Пост опубликован");
+    toast(data.scheduled ? "Публикация отложена" : "Пост опубликован");
   } catch (e) {
     $("vk-error").textContent = "Не удалось связаться с сервером. Проверьте, что python app.py запущен.";
     $("vk-error").hidden = false;
   } finally {
     btn.disabled = false;
-    btn.textContent = "Опубликовать во ВКонтакте";
+    btn.textContent = $("schedule-on").checked ? "Отложить публикацию" : "Опубликовать во ВКонтакте";
   }
 });
 

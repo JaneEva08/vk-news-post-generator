@@ -73,8 +73,14 @@
         </div>
       </div>
 
+      <!-- Когда публиковать: сразу или в выбранное время -->
+      <div class="schedule">
+        <label class="check"><input type="checkbox" id="schedule-on"> Отложить публикацию</label>
+        <input id="schedule-at" type="datetime-local" hidden>
+      </div>
+
       <p id="vk-error" class="error" hidden></p>
-      <p id="vk-done" class="done" hidden>Опубликовано: <a id="vk-link" target="_blank" rel="noopener"></a></p>
+      <p id="vk-done" class="done" hidden><span id="vk-done-text">Опубликовано:</span> <a id="vk-link" target="_blank" rel="noopener"></a></p>
       <button id="publish" class="primary vk">Опубликовать во ВКонтакте</button>
     </section>
     <!-- История: отдельно от поста, только картинка -->

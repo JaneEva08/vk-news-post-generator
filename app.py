@@ -3,6 +3,7 @@
 Запуск: python app.py
 """
 import os
+import time
 from urllib.parse import urlparse
 
 import openai
@@ -191,7 +192,8 @@ VK_ERRORS = {
     14: "ВКонтакте просит капчу. Попробуйте опубликовать позже.",
     15: "Нет доступа к стене сообщества. Проверьте права ключа и VK_GROUP_ID.",
     100: "ВКонтакте не принял данные. Проверьте VK_GROUP_ID в файле .env.",
-    214: "Не удалось добавить запись: возможно, превышен дневной лимит или у ключа нет права на стену.",
+    214: "Не удалось добавить запись: возможно, превышен лимит публикаций или отложенных записей, "
+         "время указано слишком близко/далеко или у ключа нет права на стену.",
     222: "ВКонтакте отклонил пост: в тексте есть запрещённая ссылка.",
 }
 
@@ -266,14 +268,33 @@ def upload_to_vk(upload_url, field, image):
         raise UserError("Не удалось загрузить картинку во ВКонтакте. Попробуйте ещё раз.")
 
 
-def publish_to_vk(message, image=None):
-    """Публикуем пост на стене сообщества (с картинкой, если она есть). Возвращаем ссылку."""
+def parse_publish_date(value):
+    """Превращаем время отложенной публикации (unix-секунды) в число. Пусто — публикуем сразу."""
+    if not value:
+        return None
+    try:
+        timestamp = int(value)
+    except ValueError:
+        raise UserError("Не удалось понять дату публикации. Выберите её ещё раз.")
+    # ВКонтакте принимает только время в будущем; берём запас в пару минут
+    if timestamp < time.time() + 120:
+        raise UserError("Время публикации должно быть в будущем — минимум через 2–3 минуты.")
+    return timestamp
+
+
+def publish_to_vk(message, image=None, publish_date=None):
+    """Публикуем пост на стене сообщества (с картинкой, если она есть). Возвращаем ссылку.
+
+    Если указан publish_date, ВКонтакте сам выложит пост в это время.
+    """
     _, group_id, _ = vk_settings()
     params = {
         "owner_id": -int(group_id),  # у сообществ id отрицательный
         "from_group": 1,  # публикуем от имени сообщества
         "message": message,
     }
+    if publish_date:
+        params["publish_date"] = publish_date
 
     if image:
         # 1) получаем адрес загрузки, 2) грузим файл, 3) сохраняем фото на стене
@@ -361,8 +382,12 @@ def publish():
     try:
         if not message:
             raise UserError("Пост пустой — сначала сформируйте его.")
+        publish_date = parse_publish_date(request.form.get("publish_date"))
         image = read_image(request.files.get("image"))
-        return jsonify({"url": publish_to_vk(message, image)})
+        return jsonify({
+            "url": publish_to_vk(message, image, publish_date),
+            "scheduled": bool(publish_date),
+        })
     except UserError as e:
         return jsonify({"error": str(e)}), 400
 
